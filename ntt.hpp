@@ -28,7 +28,7 @@ struct NTT_table {
 	/* See for details
 	 * https://en.wikipedia.org/wiki/Root_of_unity_modulo_n#Finding_a_primitive_k-th_root_of_unity_modulo_n
 	 */
-	NTT_table() modulus(modulus) {
+	NTT_table() : modulus(modulus) {
 		// is poly_dim a power of 2 ?
 		static_assert((poly_dim & (poly_dim - 1)) == 0);
 		// are there square roots for omega ?
