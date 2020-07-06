@@ -3,38 +3,42 @@
 #define __host__
 #endif
 
-enum FORMAT {
-	RAW,
-	NTT
-};
+#define UNSTABLE
 
 template<typename T, T poly_dim>
 struct RingPolynomial {
 	std::array<T, poly_dim> coefficients;
-	FORMAT state = NTT;
 };
 
 template<typename T, T modulus>
 __device__ __host__ inline T mod_sub(T a, T b) {
-	return (a >= b) ? a - b : (modulus - b) + a;
+	return (a >= b) ? a - b : (modulus - std::max<T>(b,1)) + a;
 }
 
 // maybe inline
 template<typename T, T modulus>
 __device__ __host__ T mod_mul(T a, T b) {
-	T res = 0;
-	while (b > 0) {
-		b = (b + a * (b & 1)) % modulus;
-		b >>= 1;
+
+	if constexpr (sizeof(T) <= 4) {
+		return (uint64_t(a) * uint64_t(b)) % modulus;
+	} else if constexpr (sizeof(T) == 8) {
+		return (__uint128_t(a) * __uint128_t(b)) % modulus;
+	} else {
+		T res = 0;
+		while (b > 0) {
+			res = (res + a * (b & 1)) % modulus;
+			b >>= 1;
+			a = (2 * a) % modulus;
+		}
+		return res;
 	}
-	return res;
 }
 
 //maybe inline
 template<typename T, T modulus>
 __device__ __host__ T mod_exp(T a, T p) {
-	T res = 1
-		T accu = a;
+	T res = 1;
+	T accu = a;
 	while (p > 0) {
 		if (p & 1) {
 			res = mod_mul<T, modulus>(res, accu);
@@ -42,6 +46,7 @@ __device__ __host__ T mod_exp(T a, T p) {
 		accu = mod_mul<T, modulus>(accu, accu);
 		p >>= 1;
 	}
+	return res;
 }
 
 // https://stackoverflow.com/questions/63776/bit-reversal-of-an-integer-ignoring-integer-size-and-endianness
@@ -61,17 +66,16 @@ __device__ __host__ T reverse_bits_no_specials(T in) {
 					       to the left (and right) we gotta move
 					       the bits in this iteration*/
 
-		bit1 = n & (1<<(i/2)); /*Extract 'right half' bit*/
+		bit1 = in & (1<<(i/2)); /*Extract 'right half' bit*/
 		bit1 <<= count;         /*Shift it to where it belongs*/
 
-		bit2 = n & 1<<((i/2) + count);  /*Find the 'left half' bit*/
+		bit2 = in & 1<<((i/2) + count);  /*Find the 'left half' bit*/
 		bit2 >>= count;         /*Place that bit in bit1's original position*/
 
 		nrev |= bit1;   /*Now add the bits to the reversal result*/
 		nrev |= bit2;
 	}
 	return nrev;
-}
 }
 
 template<typename T>
@@ -103,3 +107,30 @@ __device__ __host__ T reverse_bits(T in) {
 #endif
 
 }
+
+template<typename T, T val>
+struct PLOG_2 {
+	const static T n = PLOG_2<T, (val >> 1)>::n + 1;
+};
+
+template<>
+struct PLOG_2<uint32_t, 0> {
+	const static uint32_t n = 0;
+};
+
+template<>
+struct PLOG_2<uint64_t, 0> {
+	const static uint64_t n = 0;
+};
+
+template<>
+struct PLOG_2<__uint128_t, 0> {
+	const static __uint128_t n = 0;
+};
+
+template<typename T, T val>
+struct LOG_2 {
+	const static T n = PLOG_2<T, val>::n - 1;
+};
+
+
