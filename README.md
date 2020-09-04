@@ -6,7 +6,7 @@ Source https://eprint.iacr.org/2014/646.pdf
 
 # Timings
 
-N = 1024, Q = 134215681
+N = 1024, Q = 134215681, T = uint64_t
 
 
 g++ | clang++ | nvcc & g++ | nvcc & clang++
