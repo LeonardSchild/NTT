@@ -53,8 +53,10 @@ class NTT_worker {
 		}
 
 		void transform(RingPolynomial<T, poly_dim>& result, RingPolynomial<T, poly_dim>& input) {
-			proto_transform(result, input, powers_of_omega);
-
+			for(int i = 0; i < poly_dim; i++) {
+				forward_buffer.coefficients[i] = mod_mul<T, modulus>(input.coefficients[i], powers_of_phi[i]);	
+			}
+			proto_transform(result, forward_buffer, powers_of_omega);
 		}
 
 		void inverse_transform(RingPolynomial<T, poly_dim>& result, RingPolynomial<T, poly_dim>& input) {
@@ -62,29 +64,20 @@ class NTT_worker {
 
 			for(int i = 0; i < poly_dim; i++) {
 				result.coefficients[i] = mod_mul<T, modulus>(result.coefficients[i], poly_dim_inverse);
+				result.coefficients[i] = mod_mul<T, modulus>(result.coefficients[i], powers_of_phi_inverse[i]);
 			}
 
 		}
 
 		void multiply(RingPolynomial<T, poly_dim>& result, RingPolynomial<T, poly_dim>& lhs, RingPolynomial<T, poly_dim>& rhs) {
 
-
-			for(int i = 0; i < poly_dim; i++) {
-				product_buffer_1.coefficients[i] = mod_mul<T, modulus>(lhs.coefficients[i], powers_of_phi[i]);
-				product_buffer_2.coefficients[i] = mod_mul<T, modulus>(rhs.coefficients[i], powers_of_phi[i]);
-			}
-
-			transform(product_buffer_1, product_buffer_1);
-			transform(product_buffer_2, product_buffer_2);
+			transform(product_buffer_1, rhs);
+			transform(product_buffer_2, lhs);
 
 			for(int i = 0; i < poly_dim; i++) {
 				result.coefficients[i] = mod_mul<T, modulus>(product_buffer_1.coefficients[i], product_buffer_2.coefficients[i]);
 			}
 			inverse_transform(result, result);
-
-			for(int i = 0; i < poly_dim; i++) {
-				result.coefficients[i] = mod_mul<T, modulus>(result.coefficients[i], powers_of_phi_inverse[i]);
-			}
 		}
 
 	private:
@@ -118,6 +111,7 @@ class NTT_worker {
 		T log_poly_dim;
 
 		std::array<T, poly_dim> transform_buffer;
+		RingPolynomial<T, poly_dim> forward_buffer;
 		RingPolynomial<T, poly_dim> product_buffer_1;
 		RingPolynomial<T, poly_dim> product_buffer_2;
 

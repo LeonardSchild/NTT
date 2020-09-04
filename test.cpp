@@ -24,8 +24,9 @@ int main() {
 	auto start = std::chrono::high_resolution_clock::now();
 
 	ntt.multiply(pr, p1, p2);
-
+	
 	auto end = std::chrono::high_resolution_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+	
 	std::cout << "Product took " << elapsed.count() << "us." << std::endl;
 }
