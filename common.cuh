@@ -3,7 +3,7 @@
 #define __host__
 #endif
 
-#define UNSTABLE
+#define __CLANG__
 
 template<typename T, T poly_dim>
 struct RingPolynomial {
@@ -12,7 +12,7 @@ struct RingPolynomial {
 
 template<typename T, T modulus>
 __device__ __host__ inline T mod_sub(T a, T b) {
-	return (a >= b) ? a - b : (modulus - std::max<T>(b,1)) + a;
+	return (a >= b) ? a - b : (modulus - b) + a;
 }
 
 // maybe inline
@@ -79,7 +79,7 @@ __device__ __host__ T reverse_bits_no_specials(T in) {
 }
 
 template<typename T>
-inline __device__ __host__ T reverse_bits(T in) {
+__device__ __host__ T reverse_bits(T in) {
 
 #if defined(__CUDA_ARCH__)
 
