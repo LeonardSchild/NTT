@@ -6,9 +6,9 @@ Source https://eprint.iacr.org/2014/646.pdf
 
 # Timings
 
-N = 1024, Q = 134215681, T = uint64_t
+N = 1024, Q = 134215681, T = uint32_t
 
 
 g++ | clang++ | nvcc & g++ | nvcc & clang++
 ----|---------|------------|----------------
-333us | 270us | TBA | TBA
+55us | 52us | TBA | TBA
