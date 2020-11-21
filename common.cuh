@@ -3,11 +3,9 @@
 #define __host__
 #endif
 
-#define __CLANG__
-
 template<typename T, T poly_dim>
 struct RingPolynomial {
-	std::array<T, poly_dim> coefficients;
+	alignas(32) std::array<T, poly_dim> coefficients;
 };
 
 template<typename T, T modulus>
