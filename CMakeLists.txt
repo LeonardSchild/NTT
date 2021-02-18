@@ -3,5 +3,7 @@ project(entity)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Winline")
+
 include(entity/src/CMakeLists.txt)
 include(entity/test/CMakeLists.txt)
