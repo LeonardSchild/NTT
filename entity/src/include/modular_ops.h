@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+using uint128_t = __uint128_t;
+
 template<typename T>
 class ModRing {
 
@@ -28,7 +30,7 @@ protected:
 
 };
 
-// TODO: In the future derive everything but modulus
+// TODO: In the future derive everything from modulus
 class ModRing32 : ModRing<uint32_t> {
 
 public:
@@ -60,8 +62,45 @@ public:
     }
 
 private:
-
     uint32_t pow32modQ = 0;
 };
+
+#ifdef __SIZEOF_INT128__
+
+class ModRing64 : ModRing<uint64_t> {
+
+public:
+    ModRing64(uint64_t modulus, uint64_t modulus_inverse, uint64_t phi, uint32_t omega) : ModRing<uint64_t>(modulus, modulus_inverse, phi, omega) {
+        pow64modQ = uint64_t((uint128_t(1) << 64) % modulus);
+    };
+
+    inline uint64_t SwitchTo2N(uint64_t in) override {
+        return (uint128_t(in) * uint128_t(pow64modQ)) % modulus;
+    }
+
+    inline uint64_t SwitchFrom2N(uint64_t in) override {
+        return ModMul(1, in);
+    }
+
+    inline uint64_t ModMul(uint64_t a, uint64_t b) override {
+        uint128_t x = uint128_t(a) * uint128_t(b);
+        uint64_t s = uint64_t(x % ((uint128_t(1) << 64) - 1)) * modulus_inverse;
+        uint64_t t = (x + uint128_t(s) * uint128_t(modulus)) >> 64;
+        return t < modulus ? t : t - modulus;
+    }
+
+    inline uint64_t ModAdd(uint64_t a, uint64_t b) override {
+        return a + b;
+    }
+
+    inline uint64_t ModSub(uint64_t a, uint64_t b) override {
+        return a - b;
+    }
+
+private:
+    uint64_t pow64modQ = 0;
+};
+
+#endif
 
 #endif //ENTITY_MODULAR_OPS_H

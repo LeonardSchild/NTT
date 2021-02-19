@@ -3,18 +3,15 @@
 //
 
 #include <iostream>
-#include "src/include/modular_ops.h"
-
+#include "ModRing128.h"
 
 int main() {
 
-    ModRing32 test(134215681, 130021375, 0, 0);
 
-    uint32_t x = test.SwitchTo2N(12345);
-    uint32_t y = test.SwitchTo2N(56768);
-    uint32_t z = test.ModAdd(x,y);
-    uint32_t b = test.ModMul(x,y);
-    uint32_t a = test.SwitchFrom2N(b);
-    std::cout << "Running tests... " << a << " " << b << std::endl;
+    ModRing128 ring(0,0,0,0);
 
+    uint128_t a,b;
+    wide_mul_128(444342423424234,54234242423,&a,&b);
+
+    std::cout << uint64_t(b >> 64) << " " << uint64_t(b % (uint128_t(1) << 64)) << std::endl;
 }
