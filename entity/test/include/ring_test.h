@@ -5,6 +5,6 @@
 #ifndef ENTITY_RING_TEST_H
 #define ENTITY_RING_TEST_H
 
-bool ExecRingTests();
+bool exec_ring_tests();
 
 #endif //ENTITY_RING_TEST_H

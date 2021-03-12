@@ -5,102 +5,206 @@
 #ifndef ENTITY_MODULAR_OPS_H
 #define ENTITY_MODULAR_OPS_H
 
+#include <stdexcept>
 #include <cstdint>
+#include <climits>
 
-using uint128_t = __uint128_t;
-
+/** Abstract template class to model a finite field
+ * @tparam T variable type for computations
+ */
 template<typename T>
-class ModRing {
+class FiniteField {
 
 public:
-    ModRing(T modulus, T modulus_inverse, T phi, T omega) : modulus(modulus), modulus_inverse(modulus_inverse), phi(phi), omega(omega) {};
-    virtual ~ModRing() = default;
-    virtual T SwitchTo2N(T in) = 0;
-    virtual T SwitchFrom2N(T in) = 0;
+    /**
+     *  Constructor
+     * @param modulus modulus of finite field
+     */
+    explicit FiniteField(T modulus) : modulus(modulus), bitwidth(sizeof(T) * CHAR_BIT) {};
+
+    /**
+     * Destructor
+     */
+    virtual ~FiniteField() = default;
+
+    /**
+     * Maps elements of the finite field to their Montgomery for modulus 2^\p bitwidth
+     * @param input Element to map
+     * @return \p input in Montgomery form
+     */
+    virtual T SwitchTo2N(T input) = 0;
+
+    /**
+     * Maps element from their Montgomery form to their representation modulo \p modulus
+     * @param input Element in Montgomery form
+     * @return \p input modulo \p modulus
+     */
+    virtual T SwitchFrom2N(T input) = 0;
+
+    /**
+     * Multiplies two elements of the finite field given in Montgomery form.
+     * @param a An element from the finite field in Montgomery form
+     * @param b An element from the finite field in Montgomery form
+     * @return The product of \p a and \p b in Montgomery form
+     */
     virtual T ModMul(T a, T b) = 0;
+
+    /**
+     * Adds two elements of the finite field given in Montgomery form
+     * @param a An element from the finite field in Montgomery form
+     * @param b An element from the finite field in Montgomery form
+     * @return The sum of \p a and \p b
+     */
     virtual T ModAdd(T a, T b) = 0;
+
+    /**
+     * Subtracts two elements of the finite field given in Montgomery form
+     * @param a An element from the finite field in Montgomery form
+     * @param b An element from the finite field in Montgomery form
+     * @return The difference of \p a and \p b
+     */
     virtual T ModSub(T a, T b) = 0;
+
+    /**
+     * Raises a element of the finite field given in Montgomery Form to a power.
+     * @param a An element from the finite field in Montgomery form
+     * @param e The power to which \p a should be raised
+     * @return \p a raised to the \p e-th power
+     */
+    virtual T ModExp(T a, T e) = 0;
+
+    /**
+     * Computes a primitive root of unity given the order
+     * @param order Order of the primitive root. We assume it divides \p modulus - 1
+     * @return A primitive root of unity of given order
+     */
+    virtual T ComputePrimitiveRootOfUnity(T order) = 0;
 
 protected:
 
+    /**
+     * Precomputes parameters based on the modulus
+     */
+    virtual void PreCompute() = 0;
+
+    //! Modulus of finite field
     T modulus;
+    //! Negated inverse of \modulus modulo 2^\bitwidth
     T modulus_inverse;
-    T phi;
-    T omega;
+    //! Number of bits used by the type T
+    T bitwidth;
 
 };
 
-// TODO: In the future derive everything from modulus
-class ModRing32 : ModRing<uint32_t> {
-
+/**
+ * Template subclass of FiniteField for primitive types
+ * @tparam T_base Base type for inputs and outputs
+ * @tparam T_base2x Internal type to perform computations, should be twice as big as T_base.
+ */
+template<typename T_base, typename T_base2x>
+class BasicFiniteField : public FiniteField<T_base> {
 public:
-    ModRing32(uint32_t modulus, uint32_t modulus_inverse, uint32_t phi, uint32_t omega) : ModRing<uint32_t>(modulus, modulus_inverse, phi, omega) {
-        pow32modQ = uint32_t(( uint64_t(1) << 32) % modulus);
-    };
 
-    inline uint32_t SwitchTo2N(uint32_t in) override {
-        return (uint64_t(in) * uint64_t(pow32modQ)) % modulus;
+    explicit BasicFiniteField(T_base modulus) : FiniteField<T_base>(modulus) {
+        PreCompute();
     }
 
-    inline uint32_t SwitchFrom2N(uint32_t in) override {
+    inline T_base SwitchTo2N(T_base in) override {
+        return (T_base2x(in) * T_base2x(pow2N)) % this->modulus;
+    }
+
+    inline T_base SwitchFrom2N(T_base in) override {
         return ModMul(1, in);
     }
 
-    inline uint32_t ModMul(uint32_t a, uint32_t b) override {
-        uint64_t x = uint64_t(a) * uint64_t(b);
-        uint32_t s = uint32_t(x & 0xffffffff) * modulus_inverse;
-        uint32_t t = (x + uint64_t(s) * uint64_t(modulus)) >> 32;
-        return t < modulus ? t : t - modulus;
+    inline T_base ModMul(T_base a, T_base b) override {
+
+        T_base2x x = T_base2x(a) * T_base2x(b);
+        T_base s = T_base2x(x % (T_base2x(1) << this->bitwidth)) * this->modulus_inverse;
+        T_base t = (x + T_base2x(s) * T_base2x(this->modulus)) >> this->bitwidth;
+
+        return t < this->modulus ? t : t - this->modulus;
     }
 
-    inline uint32_t ModAdd(uint32_t a, uint32_t b) override {
+    inline T_base ModAdd(T_base a, T_base b) override {
         return a + b;
     }
 
-    inline uint32_t ModSub(uint32_t a, uint32_t b) override {
+    inline T_base ModSub(T_base a, T_base b) override {
         return a - b;
     }
 
+    T_base ModExp(T_base a, T_base e) override {
+        T_base init = pow2N;
+
+        while (e != 0) {
+            if (e & 1) {
+                init = ModMul(init, a);
+            }
+            e >>= 1;
+            a = ModMul(a, a);
+        }
+
+        return init;
+    }
+
+    T_base ComputePrimitiveRootOfUnity(T_base order) override {
+        // assume modulus is prime
+        auto group_order = this->modulus - 1;
+
+        if (group_order % order != 0) {
+            throw std::invalid_argument("Provided order does not divide Q-1. No element can be found");
+        }
+
+        T_base2x result = 1;
+        T_base2x init = 2;
+        T_base2x exp = group_order / order;
+
+        while (exp != 0) {
+            if (exp & 1)
+                result = (init * result) % this->modulus;
+            exp >>= 1;
+            init = (init * init) % this->modulus;
+        }
+
+        return result;
+    }
+
+protected:
+
+    void PreCompute() override {
+        pow2N = (T_base2x(1) << this->bitwidth) % this->modulus;
+
+        // compute inverse of modulus wrt to 2^bitwidth
+        // https://crypto.stackexchange.com/questions/47493/how-to-determine-the-multiplicative-inverse-modulo-64-or-other-power-of-two
+        T_base2x start = 2;
+        T_base2x start_mod = 1 << start;
+        T_base2x mod_inverse = 0;
+        for (T_base2x i = 0; i < start_mod; i++) {
+            if ((this->modulus * i) % start_mod == 1) {
+                mod_inverse = i;
+                break;
+            }
+        }
+
+        do {
+            start_mod = start_mod * start_mod;
+            T_base2x prod = (this->modulus * mod_inverse) % start_mod;
+            T_base2x diff = prod > 2 ? (start_mod + 2) - prod : 2 - prod;
+            mod_inverse = (mod_inverse * diff) % start_mod;
+
+        } while (start_mod < (T_base2x(1) << this->bitwidth));
+
+        this->modulus_inverse = 0 - mod_inverse;
+    }
+
 private:
-    uint32_t pow32modQ = 0;
+    T_base pow2N;
 };
 
+using FiniteField32 = BasicFiniteField<uint32_t, uint64_t>;
 #ifdef __SIZEOF_INT128__
-
-class ModRing64 : ModRing<uint64_t> {
-
-public:
-    ModRing64(uint64_t modulus, uint64_t modulus_inverse, uint64_t phi, uint32_t omega) : ModRing<uint64_t>(modulus, modulus_inverse, phi, omega) {
-        pow64modQ = uint64_t((uint128_t(1) << 64) % modulus);
-    };
-
-    inline uint64_t SwitchTo2N(uint64_t in) override {
-        return (uint128_t(in) * uint128_t(pow64modQ)) % modulus;
-    }
-
-    inline uint64_t SwitchFrom2N(uint64_t in) override {
-        return ModMul(1, in);
-    }
-
-    inline uint64_t ModMul(uint64_t a, uint64_t b) override {
-        uint128_t x = uint128_t(a) * uint128_t(b);
-        uint64_t s = uint64_t(x % ((uint128_t(1) << 64) - 1)) * modulus_inverse;
-        uint64_t t = (x + uint128_t(s) * uint128_t(modulus)) >> 64;
-        return t < modulus ? t : t - modulus;
-    }
-
-    inline uint64_t ModAdd(uint64_t a, uint64_t b) override {
-        return a + b;
-    }
-
-    inline uint64_t ModSub(uint64_t a, uint64_t b) override {
-        return a - b;
-    }
-
-private:
-    uint64_t pow64modQ = 0;
-};
-
+using FiniteField64 = BasicFiniteField<uint64_t, __uint128_t>;
 #endif
 
 #endif //ENTITY_MODULAR_OPS_H

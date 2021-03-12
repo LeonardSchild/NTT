@@ -10,7 +10,8 @@ class RandomEngine {
 
 public:
     RandomEngine(T a, T b, double stddev, double mean) : lower_bound(a), upper_bound(b), stddev(stddev), mean(mean) {};
-    virtual ~RandomEngine() = 0;
+    virtual ~RandomEngine() = default;
+
     virtual T SampleUniformInt() = 0;
     virtual T SampleNormalInt() = 0;
 

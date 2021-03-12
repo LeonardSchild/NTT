@@ -3,10 +3,15 @@
 //
 
 #include "modular_ops.h"
+#include <iostream>
+
+//TODO finish this
+
+using uint128_t = __uint128_t;
 
 #define MASK_LO_64 ((uint128_t(1) << 64) - 1)
 
-__attribute__((noinline)) void wide_mul_128(uint128_t a, uint128_t b, uint128_t* hi_ab, uint128_t* lo_ab) {
+__attribute__((noinline)) void wide_mul_128(uint128_t a, uint128_t b, uint128_t *hi_ab, uint128_t *lo_ab) {
 
     uint64_t a_lo = a & MASK_LO_64;
     uint64_t a_hi = a >> 64;
@@ -39,12 +44,14 @@ __attribute__((noinline)) void wide_mul_128(uint128_t a, uint128_t b, uint128_t*
 
 }
 
-class ModRing128 : ModRing<uint128_t> {
+class ModRing128 : FiniteField<uint128_t> {
 
 public:
-    ModRing128(uint128_t modulus, uint128_t modulus_inverse, uint128_t phi, uint32_t omega) : ModRing<uint128_t>(modulus, modulus_inverse, phi, omega) {
+    ModRing128(uint128_t modulus, uint128_t modulus_inverse, uint128_t phi, uint32_t omega) : FiniteField<uint128_t>(
+            modulus) {
 
         if ((modulus >> 127) == 1) {
+            // :^)
             pow128modQ = 0 - modulus;
         } else {
             uint128_t tmp = (uint128_t(1) << 127) % modulus;
