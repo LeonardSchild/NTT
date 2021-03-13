@@ -80,6 +80,8 @@ public:
      */
     virtual T ComputePrimitiveRootOfUnity(T order) = 0;
 
+    T GetModulus() const { return modulus; }
+
 protected:
 
     /**
@@ -140,7 +142,7 @@ public:
 
     /**
      * Multiplies two polynomials in "plain" format, i.e. they are not in NTT format yet. We still require that
-     * the Montgomery transform has been applied.
+     * the Montgomery transform has been appliedi to the coefficients.
      * @param out Output variable which will contain \p lhs * \p rhs
      * @param lhs Left input of the product
      * @param rhs Right input of the product
@@ -174,11 +176,11 @@ protected:
     FF_class FF;
 
     //! Pair which contains the transform length and its inverse w.r.t. the modulus
-    std::pair<T,T> N;
+    T N[2];
     //! Pair which contains the 2*N-th root of unity and its inverse w.r.t. the modulus
-    std::pair<T,T> phi;
+    T phi[2];
     //! Pair which contains the N-th root of unity and its inverse w.r.t. the modulus
-    std::pair<T,T> omega;
+    T omega[2];
 };
 
 #endif //ENTITY_INTERFACES_H
