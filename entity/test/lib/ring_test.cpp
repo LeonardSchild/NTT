@@ -2,9 +2,11 @@
 // Created by leonard on 19.02.21.
 //
 
+#include "src/include/entity.h"
+
 #include "test/include/ring_test.h"
-#include "src/include/modular_ops.h"
 #include "test/include/default_random_engine.h"
+
 #include <iostream>
 
 bool test_ring_32() {

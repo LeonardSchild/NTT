@@ -2,7 +2,7 @@
 // Created by leonard on 19.02.21.
 //
 
-#include "modular_ops.h"
+#include "basic_finite_fields.h"
 #include <iostream>
 
 //TODO finish this

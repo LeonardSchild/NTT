@@ -2,99 +2,15 @@
 // Created by leonard on 17.02.21.
 //
 
-#ifndef ENTITY_MODULAR_OPS_H
-#define ENTITY_MODULAR_OPS_H
+#ifndef ENTITY_BASIC_FINITE_FIELDS_H
+#define ENTITY_BASIC_FINITE_FIELDS_H
+
+#include <interfaces.h>
 
 #include <stdexcept>
 #include <cstdint>
 #include <climits>
 
-/** Abstract template class to model a finite field
- * @tparam T variable type for computations
- */
-template<typename T>
-class FiniteField {
-
-public:
-    /**
-     *  Constructor
-     * @param modulus modulus of finite field
-     */
-    explicit FiniteField(T modulus) : modulus(modulus), bitwidth(sizeof(T) * CHAR_BIT) {};
-
-    /**
-     * Destructor
-     */
-    virtual ~FiniteField() = default;
-
-    /**
-     * Maps elements of the finite field to their Montgomery for modulus 2^\p bitwidth
-     * @param input Element to map
-     * @return \p input in Montgomery form
-     */
-    virtual T SwitchTo2N(T input) = 0;
-
-    /**
-     * Maps element from their Montgomery form to their representation modulo \p modulus
-     * @param input Element in Montgomery form
-     * @return \p input modulo \p modulus
-     */
-    virtual T SwitchFrom2N(T input) = 0;
-
-    /**
-     * Multiplies two elements of the finite field given in Montgomery form.
-     * @param a An element from the finite field in Montgomery form
-     * @param b An element from the finite field in Montgomery form
-     * @return The product of \p a and \p b in Montgomery form
-     */
-    virtual T ModMul(T a, T b) = 0;
-
-    /**
-     * Adds two elements of the finite field given in Montgomery form
-     * @param a An element from the finite field in Montgomery form
-     * @param b An element from the finite field in Montgomery form
-     * @return The sum of \p a and \p b
-     */
-    virtual T ModAdd(T a, T b) = 0;
-
-    /**
-     * Subtracts two elements of the finite field given in Montgomery form
-     * @param a An element from the finite field in Montgomery form
-     * @param b An element from the finite field in Montgomery form
-     * @return The difference of \p a and \p b
-     */
-    virtual T ModSub(T a, T b) = 0;
-
-    /**
-     * Raises a element of the finite field given in Montgomery Form to a power.
-     * @param a An element from the finite field in Montgomery form
-     * @param e The power to which \p a should be raised
-     * @return \p a raised to the \p e-th power
-     */
-    virtual T ModExp(T a, T e) = 0;
-
-    /**
-     * Computes a primitive root of unity given the order
-     * @param order Order of the primitive root. We assume it divides \p modulus - 1
-     * @return A primitive root of unity of given order
-     */
-    virtual T ComputePrimitiveRootOfUnity(T order) = 0;
-
-protected:
-
-    /**
-     * Precomputes parameters based on the modulus
-     */
-    virtual void PreCompute() = 0;
-
-    //! Modulus of finite field
-    T modulus;
-    //! Negated inverse of \modulus modulo 2^\bitwidth
-    T modulus_inverse;
-    //! Number of bits used by the type T
-    T bitwidth;
-
-};
 
 /**
  * Template subclass of FiniteField for primitive types
@@ -202,9 +118,4 @@ private:
     T_base pow2N;
 };
 
-using FiniteField32 = BasicFiniteField<uint32_t, uint64_t>;
-#ifdef __SIZEOF_INT128__
-using FiniteField64 = BasicFiniteField<uint64_t, __uint128_t>;
-#endif
-
-#endif //ENTITY_MODULAR_OPS_H
+#endif //ENTITY_BASIC_FINITE_FIELDS_H
