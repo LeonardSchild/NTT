@@ -32,7 +32,7 @@ inline __uint128_t make_4u32u128(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
  * Prints a __uint128_t
  * @param a The value to be printed
  */
-void print_u128(__uint128_t &a) {
+inline void print_u128(__uint128_t &a) {
     uint64_t hi = a >> 64;
     uint64_t lo = (a << 64) >> 64;
     std::cout << "HI: " << hi << " LO: " << lo << std::endl;
@@ -65,7 +65,7 @@ T clang_reverse(T v) {
  * @param bits The number of low order bits
  * @return rev(v) >> (32 - bits)
  */
-uint32_t bit_reverse(uint32_t v, uint32_t bits) {
+inline uint32_t bit_reverse(uint32_t v, uint32_t bits) {
 #if defined(__clang__)
     return clang_reverse<uint32_t>(v) >> (sizeof(uint32_t) * CHAR_BIT - bits);
 #else
@@ -84,7 +84,7 @@ uint32_t bit_reverse(uint32_t v, uint32_t bits) {
  * @param bits The number of low order bits
  * @return rev(v) >> (64 - bits)
  */
-uint64_t bit_reverse(uint64_t v, uint32_t bits) {
+inline uint64_t bit_reverse(uint64_t v, uint32_t bits) {
 #if defined(__clang__)
     return clang_reverse<uint64_t>(v) >> (sizeof(uint64_t) * CHAR_BIT - bits);
 #else
@@ -101,7 +101,7 @@ uint64_t bit_reverse(uint64_t v, uint32_t bits) {
  * @param bits The number of low order bits
  * @return rev(v) >> (128 - bits)
  */
-__uint128_t bit_reverse(__uint128_t v, uint32_t bits) {
+inline __uint128_t bit_reverse(__uint128_t v, uint32_t bits) {
     uint64_t lo = v & (0xffffffffffffffff);
     uint64_t hi = v >> 64;
     return ((__uint128_t(bit_reverse(lo, sizeof(uint64_t) * CHAR_BIT)))
@@ -114,7 +114,7 @@ __uint128_t bit_reverse(__uint128_t v, uint32_t bits) {
  * @param v Input value
  * @return ceil(log_2(v))
  */
-uint32_t log2(uint32_t v) {
+inline uint32_t mylog2(uint32_t v) {
 #if defined(__clang__)
     return sizeof(uint32_t) * CHAR_BIT - __builtin_clz(v);
 #elif defined(__GNUG__)
