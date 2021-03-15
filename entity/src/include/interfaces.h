@@ -8,6 +8,7 @@
 #include <climits>
 #include <concepts>
 #include <vector>
+#include <cstdint>
 
 /** Abstract template class to model a finite field
  * @tparam T variable type for computations
@@ -175,8 +176,10 @@ protected:
     //! Underlying Finite Field
     FF_class FF;
 
-    //! Pair which contains the transform length and its inverse w.r.t. the modulus
-    T N[2];
+    //! Transform length and its logarithm base 2
+    uint32_t N, logN;
+    //! Inverse of transform length w.r.t. the modulus
+    T invN;
     //! Pair which contains the 2*N-th root of unity and its inverse w.r.t. the modulus
     T phi[2];
     //! Pair which contains the N-th root of unity and its inverse w.r.t. the modulus
