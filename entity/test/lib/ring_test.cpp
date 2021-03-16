@@ -91,8 +91,8 @@ bool exec_ring_tests() {
     bool pass = test_ring_32();
     pass = pass && test_ring_64();
 
-    if (pass) {
-        std::cerr << "All tests passed" << std::endl;
+    if (!pass) {
+        std::cerr << "Some ring tests failed" << std::endl;
     }
 
     return pass;

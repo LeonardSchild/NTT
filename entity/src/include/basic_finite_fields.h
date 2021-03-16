@@ -68,12 +68,21 @@ public:
         // assume modulus is prime
         auto group_order = this->modulus - 1;
 
+        if (order == 1)
+            return 1;
+
+        if (order == group_order)
+            return 2;
+
         if (group_order % order != 0) {
             throw std::invalid_argument("Provided order does not divide Q-1. No element can be found");
         }
 
         T_base2x result = 1;
         T_base2x init = 2;
+        while (gcd(init, group_order) != 1)
+            init++;
+
         T_base2x exp = group_order / order;
 
         while (exp != 0) {
@@ -115,6 +124,17 @@ protected:
     }
 
 private:
+
+    T_base gcd(T_base a, T_base b) {
+        while (b != 0) {
+            T_base t = b;
+            b = a % b;
+            a = t;
+        }
+        return a;
+    }
+
+
     T_base pow2N;
 };
 

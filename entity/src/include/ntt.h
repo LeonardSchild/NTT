@@ -19,6 +19,8 @@
 template<typename T_base, typename T_base2x>
 class BasicNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
 
+public:
+
     using NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::FF;
     using typename NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::Direction;
 
@@ -32,12 +34,12 @@ class BasicNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
         for(uint32_t i = 0; i < this->N; i++)
             in_out[i] = FF.ModMul(in_out[i], FF.ModExp(this->phi[0], i));
 
-        ProtoTransform(in_out, Direction::Forward);
+        ProtoTransform(in_out, Direction::FORWARD);
     }
 
     void Backward(std::vector<T_base>& in_out) override {
 
-        ProtoTransform(in_out, Direction::Backward);
+        ProtoTransform(in_out, Direction::BACKWARD);
 
         for (uint32_t i = 0; i < this->N; i++)
             in_out[i] = FF.ModMul(in_out[i], FF.ModExp(this->phi[1], i));
@@ -55,47 +57,60 @@ class BasicNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
         Multiply(out, lhs, rhs);
     }
 
+    FiniteField<uint32_t>& GetFF() override {
+        return FF;
+    }
+
 protected:
 
 
     void PreCompute() override {
 
         T_base N = this->N;
-        this->logN = log2(N);
-        T_base omega_t = FF.ComputePrimitiveRootOfUnity(N);
+        this->logN = mylog2(N);
         T_base phi_t = FF.ComputePrimitiveRootOfUnity(2 * N);
         T_base N_t = FF.SwitchTo2N(N);
         T_base modulus = FF.GetModulus();
 
-        this->omega[0] = FF.SwitchTo2N(omega_t);
-        // Use Fermat's small theorem
-        this->omega[1] = FF.ModExp(this->omega[0], modulus - 2);
         this->phi[0] = FF.SwitchTo2N(phi_t);
         // Use Fermat's small theorem
         this->phi[1] = FF.ModExp(this->phi[0], modulus - 2);
+
+        this->omega[0] = FF.ModMul(this->phi[0], this->phi[0]);
+        // Use Fermat's small theorem
+        this->omega[1] = FF.ModExp(this->omega[0], modulus - 2);
+
         this->invN = FF.ModExp(N_t, modulus - 2);
 
+        std::cerr << FF.SwitchFrom2N(this->phi[0]) << " " << FF.SwitchFrom2N(this->phi[1]) << " "
+                  << FF.SwitchFrom2N(this->omega[0]) << " " << FF.SwitchFrom2N(this->omega[1]) << " "
+                  << FF.SwitchFrom2N(this->invN) << std::endl;
     }
 
     void ProtoTransform(std::vector<T_base>& in_out, Direction d) override {
 
         // For this implementation we assume that the index fits into a 32-bit unsigned integer
 
-        for (uint32_t i = 0; i < this->N[0] / 2; i++)
+        for (uint32_t i = 0; i < this->N; i++)
             transform_buffer[i] = in_out[bit_reverse(i, this->logN)];
 
         auto twiddle_factor = this->omega[d];
 
         for (uint32_t i = 0; i < this->logN; i++) {
             for(uint32_t j = 0; j < this->N / 2; j++) {
-                uint32_t pij = (j >> (this->logN - i)) << (this->logN - i);
+                uint32_t pij = (j >> (this->logN - i - 1)) << (this->logN - i - 1);
                 auto o = FF.ModExp(twiddle_factor, pij);
                 auto a = transform_buffer[2 * j];
                 auto b = FF.ModMul(transform_buffer[2 * j + 1], o);
                 in_out[j] = FF.ModAdd(a,b);
                 in_out[j + this->N/2] = FF.ModSub(a,b);
             }
-            in_out.swap(transform_buffer);
+
+            for(uint32_t j = 0; j < this->N; j++) {
+                transform_buffer[j] = in_out[j];
+            }
+
+            //in_out.swap(transform_buffer);
         }
 
         if (this->logN & 1)

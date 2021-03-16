@@ -150,6 +150,11 @@ public:
      */
     virtual void TransformAndMultiply(std::vector<T>& out, std::vector<T>& lhs, std::vector<T>& rhs) = 0;
 
+    /**
+     * Getter for the finite field
+     * @return \p FF
+     */
+    virtual FiniteField<T>& GetFF() = 0;
 protected:
 
     /**
