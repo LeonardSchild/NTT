@@ -116,7 +116,7 @@ inline __uint128_t bit_reverse(__uint128_t v, uint32_t bits) {
  */
 inline uint32_t mylog2(uint32_t v) {
 #if defined(__clang__)
-    return sizeof(uint32_t) * CHAR_BIT - __builtin_clz(v);
+    return sizeof(uint32_t) * CHAR_BIT - __builtin_clz(v) - 1;
 #elif defined(__GNUG__)
     return sizeof(uint32_t) * CHAR_BIT - __builtin_clz(v);
 #else

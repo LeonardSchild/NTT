@@ -43,11 +43,12 @@ public:
     }
 
     inline T_base ModAdd(T_base a, T_base b) override {
-        return a + b;
+        T_base sum = a + b;
+        return sum >= this->modulus ? sum - this->modulus : sum;
     }
 
     inline T_base ModSub(T_base a, T_base b) override {
-        return a - b;
+        return ((this->modulus) + a) - b;
     }
 
     T_base ModExp(T_base a, T_base e) override {
@@ -93,6 +94,10 @@ public:
         }
 
         return result;
+    }
+
+    T_base GetPow2N() {
+        return pow2N;
     }
 
 protected:

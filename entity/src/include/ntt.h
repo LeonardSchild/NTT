@@ -81,10 +81,6 @@ protected:
         this->omega[1] = FF.ModExp(this->omega[0], modulus - 2);
 
         this->invN = FF.ModExp(N_t, modulus - 2);
-
-        std::cerr << FF.SwitchFrom2N(this->phi[0]) << " " << FF.SwitchFrom2N(this->phi[1]) << " "
-                  << FF.SwitchFrom2N(this->omega[0]) << " " << FF.SwitchFrom2N(this->omega[1]) << " "
-                  << FF.SwitchFrom2N(this->invN) << std::endl;
     }
 
     void ProtoTransform(std::vector<T_base>& in_out, Direction d) override {
@@ -96,12 +92,14 @@ protected:
 
         auto twiddle_factor = this->omega[d];
 
+
         for (uint32_t i = 0; i < this->logN; i++) {
+
             for(uint32_t j = 0; j < this->N / 2; j++) {
                 uint32_t pij = (j >> (this->logN - i - 1)) << (this->logN - i - 1);
-                auto o = FF.ModExp(twiddle_factor, pij);
-                auto a = transform_buffer[2 * j];
-                auto b = FF.ModMul(transform_buffer[2 * j + 1], o);
+                T_base o = FF.ModExp(twiddle_factor, pij);
+                T_base a = transform_buffer[2 * j];
+                T_base b = FF.ModMul(transform_buffer[2 * j + 1], o);
                 in_out[j] = FF.ModAdd(a,b);
                 in_out[j + this->N/2] = FF.ModSub(a,b);
             }
@@ -113,8 +111,10 @@ protected:
             //in_out.swap(transform_buffer);
         }
 
+        /*
         if (this->logN & 1)
             in_out.swap(transform_buffer);
+        */
 
         if (d == Direction::BACKWARD) {
             for (uint32_t i = 0; i < this->N; i++) {
