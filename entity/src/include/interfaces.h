@@ -155,6 +155,7 @@ public:
      * @return \p FF
      */
     virtual FiniteField<T>& GetFF() = 0;
+
 protected:
 
     /**

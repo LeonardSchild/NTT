@@ -17,7 +17,7 @@
  * @tparam T_base2x Internal type for the BasicFiniteField
  */
 template<typename T_base, typename T_base2x>
-class BasicNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
+class BasicNttEngine : public NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
 
 public:
 
@@ -56,7 +56,7 @@ public:
         Multiply(out, lhs, rhs);
     }
 
-    FiniteField<uint32_t>& GetFF() override {
+    FiniteField<T_base>& GetFF() override {
         return FF;
     }
 

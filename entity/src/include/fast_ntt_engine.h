@@ -11,23 +11,22 @@
 
 
 template<typename T_base, typename T_base2x>
-class FastNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
+class FastNttEngine : public NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
 
 public:
 
     using NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::FF;
     using typename NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::Direction;
 
-
     FastNttEngine(T_base modulus, T_base N) : NttEngine<T_base, BasicFiniteField <T_base, T_base2x>>(modulus, N),
-    transform_buffer(N) {
+    transform_buffer(N), powers_of_omega(N), powers_of_omega1(N), powers_of_phi(N), powers_of_phi1(N), reversed_idx(N) {
         PreCompute();
     }
 
     void Forward(std::vector<T_base>& in_out) override {
 
         for(uint32_t i = 0; i < this->N; i++)
-            in_out[i] = FF.ModMul(in_out[i], FF.ModExp(this->phi[0], i));
+            in_out[i] = FF.ModMul(in_out[i], powers_of_phi[i]);
 
         ProtoTransform(in_out, Direction::FORWARD);
     }
@@ -37,7 +36,7 @@ public:
         ProtoTransform(in_out, Direction::BACKWARD);
 
         for (uint32_t i = 0; i < this->N; i++)
-            in_out[i] = FF.ModMul(in_out[i], FF.ModExp(this->phi[1], i));
+            in_out[i] = FF.ModMul(in_out[i], powers_of_phi1[i]);
     }
 
     void Multiply(std::vector<T_base>& out, std::vector<T_base>& lhs, std::vector<T_base>& rhs) override {
@@ -52,7 +51,7 @@ public:
         Multiply(out, lhs, rhs);
     }
 
-    FiniteField<uint32_t>& GetFF() override {
+    FiniteField<T_base>& GetFF() override {
         return FF;
     }
 
@@ -75,12 +74,6 @@ protected:
         this->omega[1] = FF.ModExp(this->omega[0], modulus - 2);
 
         this->invN = FF.ModExp(N_t, modulus - 2);
-
-        powers_of_omega.reserve(N);
-        powers_of_omega1.reserve(N);
-        powers_of_phi.reserve(N);
-        powers_of_phi1.reserve(N);
-        reversed_idx.reserve(N);
 
         for (uint32_t i = 0; i < N; ++i) {
             reversed_idx[i] = bit_reverse(i, this->logN);
