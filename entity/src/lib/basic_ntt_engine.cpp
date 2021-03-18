@@ -2,4 +2,4 @@
 // Created by leonard on 25.02.21.
 //
 
-#include "ntt.h"
+#include "basic_ntt_engine.h"

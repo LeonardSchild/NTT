@@ -1,31 +1,26 @@
 //
-// Created by leonard on 25.02.21.
+// Created by leonard on 18.03.21.
 //
 
-#ifndef ENTITY_NTT_H
-#define ENTITY_NTT_H
+#ifndef ENTITY_FAST_NTT_ENGINE_H
+#define ENTITY_FAST_NTT_ENGINE_H
 
 #include "basic_finite_fields.h"
 #include "interfaces.h"
 #include "utils.h"
 
-#include <vector>
-/**
- * This subclass implements the functionality of a basic NttEngine. It follows the algorithm(s) described in
- * https://eprint.iacr.org/2014/646.pdf, but has not been optimised.
- * @tparam T_base Base type for the computations within this class, and the in-out type for the underlying BasicFiniteField
- * @tparam T_base2x Internal type for the BasicFiniteField
- */
+
 template<typename T_base, typename T_base2x>
-class BasicNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
+class FastNttEngine : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>> {
 
 public:
 
     using NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::FF;
     using typename NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>::Direction;
 
-    BasicNttEngine(T_base modulus, T_base N) : NttEngine<T_base, BasicFiniteField<T_base, T_base2x>>(modulus, N), transform_buffer(N) {
-        this->N = N;
+
+    FastNttEngine(T_base modulus, T_base N) : NttEngine<T_base, BasicFiniteField <T_base, T_base2x>>(modulus, N),
+    transform_buffer(N) {
         PreCompute();
     }
 
@@ -63,7 +58,6 @@ public:
 
 protected:
 
-
     void PreCompute() override {
 
         T_base N = this->N;
@@ -81,6 +75,20 @@ protected:
         this->omega[1] = FF.ModExp(this->omega[0], modulus - 2);
 
         this->invN = FF.ModExp(N_t, modulus - 2);
+
+        powers_of_omega.reserve(N);
+        powers_of_omega1.reserve(N);
+        powers_of_phi.reserve(N);
+        powers_of_phi1.reserve(N);
+        reversed_idx.reserve(N);
+
+        for (uint32_t i = 0; i < N; ++i) {
+            reversed_idx[i] = bit_reverse(i, this->logN);
+            powers_of_omega[i] = FF.ModExp(this->omega[0], i);
+            powers_of_omega1[i] = FF.ModExp(this->omega[1], i);
+            powers_of_phi[i] = FF.ModExp(this->phi[0], i);
+            powers_of_phi1[i] = FF.ModExp(this->phi[1], i);
+        }
     }
 
     void ProtoTransform(std::vector<T_base>& in_out, Direction d) override {
@@ -88,33 +96,27 @@ protected:
         // For this implementation we assume that the index fits into a 32-bit unsigned integer
 
         for (uint32_t i = 0; i < this->N; i++)
-            transform_buffer[i] = in_out[bit_reverse(i, this->logN)];
+            transform_buffer[i] = in_out[reversed_idx[i]];
 
-        auto twiddle_factor = this->omega[d];
-
+        auto twiddle_factors = d == 0 ? powers_of_omega : powers_of_omega1;
 
         for (uint32_t i = 0; i < this->logN; i++) {
-
-            for(uint32_t j = 0; j < this->N / 2; j++) {
-                uint32_t pij = (j >> (this->logN - i - 1)) << (this->logN - i - 1);
-                T_base o = FF.ModExp(twiddle_factor, pij);
+            uint32_t mask = (1 << (this->logN - i)) - 1;
+            for (uint32_t j = 0; j < this->N / 2; j++) {
+                uint32_t pij = j & mask;
+                T_base o = twiddle_factors[pij];
                 T_base a = transform_buffer[2 * j];
                 T_base b = FF.ModMul(transform_buffer[2 * j + 1], o);
-                in_out[j] = FF.ModAdd(a,b);
-                in_out[j + this->N/2] = FF.ModSub(a,b);
+                in_out[j] = FF.ModAdd(a, b);
+                in_out[j + this->N / 2] = FF.ModSub(a, b);
             }
 
-            for(uint32_t j = 0; j < this->N; j++) {
-                transform_buffer[j] = in_out[j];
-            }
-
-            //in_out.swap(transform_buffer);
+            in_out.swap(transform_buffer);
         }
 
-        /*
         if (this->logN & 1)
             in_out.swap(transform_buffer);
-        */
+
 
         if (d == Direction::BACKWARD) {
             for (uint32_t i = 0; i < this->N; i++) {
@@ -122,11 +124,15 @@ protected:
             }
         }
     }
-
 private:
 
     std::vector<T_base> transform_buffer;
+    std::vector<T_base> powers_of_omega;
+    std::vector<T_base> powers_of_omega1;
+    std::vector<T_base> powers_of_phi;
+    std::vector<T_base> powers_of_phi1;
+    std::vector<T_base> reversed_idx;
 
 };
 
-#endif //ENTITY_NTT_H
+#endif //ENTITY_FAST_NTT_ENGINE_H

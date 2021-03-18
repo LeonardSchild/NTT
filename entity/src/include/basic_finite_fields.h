@@ -81,6 +81,9 @@ public:
 
         T_base2x result = 1;
         T_base2x init = 2;
+        // I am aware that this does not guarantee that init^exp yields a primitive root
+        // However it worked fairly ok and i didn't want to start factoring the order to test whether what we
+        // find actually yields a primitive root. So... TODO
         while (gcd(init, group_order) != 1)
             init++;
 
