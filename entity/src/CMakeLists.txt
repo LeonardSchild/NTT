@@ -1,7 +1,8 @@
 set(ENTITY_HEADERS "entity/src/include/")
 set(ENTITY_SOURCES "entity/src/lib/")
 
-set(CXX_HEADERS basic_finite_fields.h FF128.h utils.h basic_ntt_engine.h interfaces.h entity.h fast_ntt_engine.h cu_finite_field.cuh)
+set(CXX_HEADERS basic_finite_fields.h FF128.h utils.h basic_ntt_engine.h interfaces.h entity.h fast_ntt_engine.h cu_finite_field.cuh
+        cu_ntt_engine.cuh)
 list(TRANSFORM CXX_HEADERS PREPEND ${ENTITY_HEADERS})
 
 set(CXX_SOURCES basic_ntt_engine.cpp)
